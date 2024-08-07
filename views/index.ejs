@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Storage App</title>
+    
+    <!-- Include Bootstrap CSS for styling -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Include Font Awesome CSS for file icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Include Bootstrap JS for interactive components -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.9.4/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Page Title -->
+        <h1 class="mt-5 text-success">File Storage</h1>
+
+        <!-- File Upload Section -->
+        <h2 class="mt-4">Upload File</h2>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <!-- File input field -->
+                <input type="file" name="file" class="form-control" required>
+            </div>
+            <!-- Submit button -->
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+
+        <!-- File Deletion Section -->
+        <h2 class="mt-4">Delete File</h2>
+        <form id="deleteForm">
+            <div class="mb-3">
+                <!-- Dropdown menu for selecting files to delete -->
+                <select id="fileSelect" name="fileName" class="form-select"></select>
+            </div>
+            <!-- Button to trigger file deletion -->
+            <button type="button" class="btn btn-danger" onclick="deleteFile()">Delete</button>
+        </form>
+
+        <!-- Uploaded Files List -->
+        <h2 class="mt-4">Uploaded Files</h2>
+        <ul id="fileList" class="list-group"></ul>
+    </div>
+
+    <script>
+        // Function to populate the list of files with icons
+        function populateFileListWithIcons() {
+            fetch('/view')
+                .then(response => response.json())
+                .then(data => {
+                    const fileList = document.getElementById('fileList');
+                    fileList.innerHTML = ''; // Clear existing file list
+
+                    // Iterate over each file and create list items with icons
+                    data.files.forEach(fileName => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+                        const fileExtension = fileName.split('.').pop(); // Get file extension
+
+                        const iconSpan = document.createElement('span');
+                        iconSpan.className = 'me-3';
+                        iconSpan.innerHTML = getFileIconHTML(fileExtension); // Get icon HTML based on file extension
+
+                        const fileLink = document.createElement('a');
+                        fileLink.href = `/uploads/${fileName}`; // Link to view the file
+                        fileLink.textContent = fileName;
+
+                        listItem.appendChild(iconSpan); // Add icon to list item
+                        listItem.appendChild(fileLink); // Add file link to list item
+
+                        fileList.appendChild(listItem); // Add list item to the file list
+                    });
+                })
+                .catch(error => console.error(error)); // Handle errors
+        }
+
+        // Function to return appropriate Font Awesome icon HTML based on file extension
+        function getFileIconHTML(fileExtension) {
+            const iconClasses = {
+                pdf: 'far fa-file-pdf',
+                doc: 'far fa-file-word',
+                docx: 'far fa-file-word',
+                xls: 'far fa-file-excel',
+                xlsx: 'far fa-file-excel',
+                ppt: 'far fa-file-powerpoint',
+                pptx: 'far fa-file-powerpoint',
+                txt: 'far fa-file-alt',
+                jpg: 'far fa-file-image',
+                jpeg: 'far fa-file-image',
+                png: 'far fa-file-image',
+                gif: 'far fa-file-image',
+                default: 'far fa-file'
+            };
+
+            // Return the appropriate icon HTML based on file extension
+            return `<i class="${iconClasses[fileExtension.toLowerCase()] || iconClasses['default']}"></i>`;
+        }
+
+        // Function to delete a selected file
+        function deleteFile() {
+            const deleteForm = document.getElementById('deleteForm');
+            const formData = new FormData(deleteForm);
+
+            fetch(`/delete/${formData.get('fileName')}`, {
+                method: 'DELETE',
+            })
+                .then(response => response.text())
+                .then(message => {
+                    alert(message); // Show a confirmation message
+                    populateFileListWithIcons(); // Update the file list
+                    populateDeleteOptions(); // Update the delete dropdown
+                })
+                .catch(error => console.error(error)); // Handle errors
+        }
+
+        // Function to populate the dropdown menu with files for deletion
+        function populateDeleteOptions() {
+            fetch('/view')
+                .then(response => response.json())
+                .then(data => {
+                    const fileSelect = document.getElementById('fileSelect');
+                    fileSelect.innerHTML = ''; // Clear existing options
+                    data.files.forEach(fileName => {
+                        const option = document.createElement('option');
+                        option.value = fileName;
+                        option.textContent = fileName;
+                        fileSelect.appendChild(option); // Add option to the dropdown
+                    });
+                })
+                .catch(error => console.error(error)); // Handle errors
+        }
+
+        // Initial population of file list and delete options
+        populateFileListWithIcons();
+        populateDeleteOptions();
+    </script>
+</body>
+</html>
